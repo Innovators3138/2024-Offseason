@@ -16,6 +16,7 @@ class SwerveModule:
         self.label = label
         self.desired_state = SwerveModuleState(0.0, Rotation2d())  # Initialize Desired State
         self.turning_output = 0
+        self.steering_encoder_offset = steering_encoder_offset
 
         """
         Initialize Driving Motor
@@ -47,7 +48,7 @@ class SwerveModule:
         self.steering_motor.setInverted(turning_inverted)
         self.steering_motor.configVoltageCompSaturation(constants.VOLTAGE_COMPENSATION)
         self.steering_motor.enableVoltageCompensation(True)
-        self.steering_motor.configSelectedFeedbackSensor(TalonSRXFeedbackDevice.CTRE_MagEncoder_Absolute, 0, 50)
+        self.steering_motor.configSelectedFeedbackSensor(phoenix5.FeedbackDevice.CTRE_MagEncoder_Absolute)
         self.steering_motor.setSensorPhase(constants.STEER_ENCODERS_INVERTED)
         self.steering_motor.configNominalOutputForward(0, 30)
         self.steering_motor.configNominalOutputReverse(0, 30)
@@ -61,10 +62,9 @@ class SwerveModule:
         self.steering_motor.config_kF(0, constants.STEERING_FF, 30)
         self.steering_motor.configPeakOutputForward(constants.STEERING_MAX_OUTPUT)
         self.steering_motor.configPeakOutputReverse(constants.STEERING_MIN_OUTPUT)
-        self.steering_motor.configSensorTerm()
 
 
-        self.steering_motor_position = self.steering_motor.getSensorCollection().getPulseWidthPosition() / constants.ENCODER_COUNTS_PER_REV * math.tau - steering_encoder_offset
+        self.steering_motor_position = self.steering_motor.getSensorCollection().getPulseWidthPosition() / constants.ENCODER_COUNTS_PER_REV * math.tau - self.steering_encoder_offset
 
     def get_steer_encoder(self):
         reverse_multiplier = -1 if constants.STEER_ENCODERS_INVERTED else 1
@@ -94,9 +94,8 @@ class SwerveModule:
 
         self.driving_pid_controller.setReference(optimizedDesiredState.speed, constants.DRIVE_CONTROLLER_TYPE.ControlType.kVelocity)
 
-        self.steering_motor.set(optimizedDesiredState.angle.radians() / math.tau * constants.ENCODER_COUNTS_PER_REV)
-        self.turning_output = 0 if math.fabs(self.turning_output) < 0.01 else self.turning_output
-        self.steering_motor.set(self.turning_output)
+        self.steering_motor.set(phoenix5.ControlMode.Position, optimizedDesiredState.angle.radians() / math.tau * constants.ENCODER_COUNTS_PER_REV + self.steering_encoder_offset)
+        #self.turning_output = 0 if math.fabs(self.turning_output) < 0.01 else self.turning_output
 
     def resetEncoders(self) -> None:
         self.driving_encoder.setPosition(0)

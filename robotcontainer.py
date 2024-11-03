@@ -26,6 +26,12 @@ class RobotContainer:
         self.drive.setDefaultCommand(DriveByJoystickSwerve(container=self, swerve=self.drive,
                                                            field_oriented=True, rate_limited=False))
 
+    def set_start_time(self):
+        self.start_time = time.time()
+
+    def get_enabled_time(self):
+        return time.time() - self.start_time
+
     def configure_driver_joystick(self):
         self.driver_command_controller = CommandXboxController(constants.DRIVE_CONTROLLER_PORT)
         self.trigger_a = self.driver_command_controller.a()  # 2024 way

@@ -1,4 +1,38 @@
 {
+  "HALProvider": {
+    "Other Devices": {
+      "SPARK MAX [1]": {
+        "header": {
+          "open": true
+        }
+      },
+      "SPARK MAX [3]": {
+        "header": {
+          "open": true
+        }
+      },
+      "Talon SRX[5]": {
+        "header": {
+          "open": true
+        }
+      },
+      "Talon SRX[5]/Pulse Width Input": {
+        "header": {
+          "open": true
+        }
+      },
+      "Talon SRX[5]/Quad Encoder": {
+        "header": {
+          "open": true
+        }
+      },
+      "navX-Sensor[4]": {
+        "header": {
+          "open": true
+        }
+      }
+    }
+  },
   "NTProvider": {
     "types": {
       "/FMSInfo": "FMSInfo",
@@ -6,6 +40,9 @@
     }
   },
   "NetworkTables": {
+    "Persistent Values": {
+      "open": false
+    },
     "transitory": {
       "LiveWindow": {
         "open": true
@@ -13,6 +50,18 @@
     }
   },
   "NetworkTables Info": {
+    "Clients": {
+      "open": true
+    },
+    "Server": {
+      "Publishers": {
+        "open": true
+      },
+      "Subscribers": {
+        "open": true
+      },
+      "open": true
+    },
     "visible": true
   }
 }

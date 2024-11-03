@@ -19,7 +19,7 @@ from pathplannerlib.path import PathPlannerTrajectory
 import robotpy_apriltag
 
 import constants
-from swervemodule import SwerveModule
+from subsystems.swervemodule import SwerveModule
 
 class Swerve(Subsystem):
     def __init__(self):
