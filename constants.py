@@ -12,14 +12,20 @@ from wpimath.system.plant import DCMotor
 """
 CAN Mapping
 """
-LEFT_FRONT_DRIVE_CAN_ID = 1
-RIGHT_FRONT_DRIVE_CAN_ID = 2
-LEFT_BACK_DRIVE_CAN_ID = 3
-RIGHT_BACK_DRIVE_CAN_ID = 4
-LEFT_FRONT_STEER_CAN_ID = 5
-RIGHT_FRONT_STEER_CAN_ID = 6
-LEFT_BACK_STEER_CAN_ID = 7
-RIGHT_BACK_STEER_CAN_ID = 8
+FRONT_LEFT_DRIVE_CAN_ID = 1
+FRONT_RIGHT_DRIVE_CAN_ID = 2
+BACK_LEFT_DRIVE_CAN_ID = 3
+BACK_RIGHT_DRIVE_CAN_ID = 4
+FRONT_LEFT_STEER_CAN_ID = 5
+FRONT_RIGHT_STEER_CAN_ID = 6
+BACK_LEFT_STEER_CAN_ID = 7
+BACK_RIGHT_STEER_CAN_ID = 8
+
+
+"""
+Controller Mapping
+"""
+DRIVE_CONTROLLER_PORT = 1
 
 """
 SOME IMPORTANT THINGS
@@ -47,6 +53,7 @@ bag_motor = DCMotor(12.0, 0.43, 53.0, 1.8, rotationsPerMinuteToRadiansPerSecond(
 vex775pro_motor = DCMotor(12.0, 0.71, 134.0, 0.7, rotationsPerMinuteToRadiansPerSecond(18730.0), 1)
 krakenx60_motor = DCMotor(12.0, 7.09, 366.0, 2.0, rotationsPerMinuteToRadiansPerSecond(6000), 1)
 
+
 DRIVE_CONTROLLER_TYPE = CANSparkMax
 
 """
@@ -64,8 +71,9 @@ MINIMUM_ROTATION = MAX_ANGULAR_SPEED * INNER_DEADBAND
 """
 SWERVE CONSTANTS - CHASSIS CONFIGURATIONS
 """
-TRACK_WIDTH = units.inchesToMeters(24.0)  # Distance between centers of right and left wheels on the robot
-WHEEL_BASE = units.inchesToMeters(24.0)  # Distance between centers of the front and back wheels on the robot
+# Center axis of swerve modules are 3.375" from the rails. Rails are 28" square.
+TRACK_WIDTH = units.inchesToMeters(21.25)  # Distance between centers of right and left wheels on the robot
+WHEEL_BASE = units.inchesToMeters(21.25)  # Distance between centers of the front and back wheels on the robot
 
 """
 This is key !  Here is where you get left and right correct
@@ -85,22 +93,31 @@ MODULE_POSITIONS = [
 ]
 
 DRIVE_KINEMATICS = SwerveDrive4Kinematics(*MODULE_POSITIONS)
+START_X = 0
+START_Y = 0
+SWERVE_STATE_MESSAGES = True
 
 GYRO_REVERSED = False # Used in the swerve modules themselves to reverse the direction of the analog encoder
-REVERSE_ANALOG_ENCODERS = False
+STEER_ENCODERS_INVERTED = True
 DRIVE_MOTORS_INVERTED = False
 TURN_MOTORS_INVERTED = True
-ANALOG_ENCODER_ABS_MAX = 0.989  # Determined by filtering and watching as it flips from 1 to 0
+#ANALOG_ENCODER_ABS_MAX = 0.989  # Determined by filtering and watching as it flips from 1 to 0
 # we pass this next one to the analog potentiometer object t0 determine the full range
-ANALOG_ENCODER_SCALE_FACTOR = 1 / ANALOG_ENCODER_ABS_MAX
+#ANALOG_ENCODER_SCALE_FACTOR = 1 / ANALOG_ENCODER_ABS_MAX
 
 # absolute encoder values when wheels facing forward  - 20230322 CJH
 # NOW IN RADIANS to feed right to the AnalogPotentiometer on the module
-LF_ZERO_OFFSET = ANALOG_ENCODER_SCALE_FACTOR * math.tau * (0.829)  # rad
-RF_ZERO_OFFSET = ANALOG_ENCODER_SCALE_FACTOR * math.tau * (0.783)  # rad
-LB_ZERO_OFFSET = ANALOG_ENCODER_SCALE_FACTOR * math.tau * (0.436)  # rad
-RB_ZERO_OFFSET = ANALOG_ENCODER_SCALE_FACTOR * math.tau * (0.829)  # rad
-ANALOG_ENCODER_OFFSETS = {'lf':0.829, 'rf':0.783, 'lb':0.304, 'rb':0.986}  # use in sim
+#FL_ZERO_OFFSET = ANALOG_ENCODER_SCALE_FACTOR * math.tau * (0.829)  # rad
+#FR_ZERO_OFFSET = ANALOG_ENCODER_SCALE_FACTOR * math.tau * (0.783)  # rad
+#BL_ZERO_OFFSET = ANALOG_ENCODER_SCALE_FACTOR * math.tau * (0.436)  # rad
+#BR_ZERO_OFFSET = ANALOG_ENCODER_SCALE_FACTOR * math.tau * (0.829)  # rad
+#ANALOG_ENCODER_OFFSETS = {'fl':0.829, 'fr':0.783, 'bl':0.304, 'br':0.986}  # use in sim
+ENCODER_COUNTS_PER_REV = 4096.0
+FL_ZERO_OFFSET = 1388.0 / ENCODER_COUNTS_PER_REV * math.tau # rad
+FR_ZERO_OFFSET = 1581.0 / ENCODER_COUNTS_PER_REV * math.tau # rad
+BL_ZERO_OFFSET = 1327.0 / ENCODER_COUNTS_PER_REV * math.tau # rad
+BR_ZERO_OFFSET = 3697.0 / ENCODER_COUNTS_PER_REV * math.tau # rad
+
 
 """
 SWERVE MODULE CONSTANTS
@@ -120,20 +137,20 @@ TURNING_MOTOR_GEAR_RATIO = 396.0 / 35.0  # 11.3142:1
 DRIVING_P = 0
 DRIVING_I = 0
 DRIVING_D = 0
-DRIVING_FF = 1 / DRIVE_WHEEL_FREE_SPEED_RPS
+DRIVING_FF = 1 / (DRIVE_WHEEL_FREE_SPEED_RPS / VOLTAGE_COMPENSATION)
 DRIVING_MIN_OUTPUT = -0.96
 DRIVING_MAX_OUTPUT = 0.96
 SMART_POSITION_MAX_VELOCITY = 3  # m/s
 SMART_POSITION_MAX_ACCEL = 2  # m/s/s
 
-TURNING_P = 0.25
-TURNING_I = 0.0
-TURNING_D = 0.0
-TURNING_FF = 0.0
-TURNING_MIN_OUTPUT = -1.0
-TURNING_MAX_OUTPUT = 1.0
+STEERING_P = 0.25
+STEERING_I = 0.0
+STEERING_D = 0.0
+STEERING_FF = 0.0
+STEERING_MIN_OUTPUT = -1.0
+STEERING_MAX_OUTPUT = 1.0
 
 DRIVING_MOTOR_CURRENT_LIMIT = 60  # amps
-TURNING_MOTOR_CURRENT_LIMIT = 40  # amps
+STEERING_MOTOR_CURRENT_LIMIT = 40  # amps
 
 

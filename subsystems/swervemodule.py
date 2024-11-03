@@ -11,7 +11,7 @@ from phoenix5 import WPI_TalonSRX, TalonSRXFeedbackDevice
 import constants
 
 class SwerveModule:
-    def __init__(self, driving_can_id: int, turning_can_id: int, turning_encoder_offset: float, driving_inverted=False,
+    def __init__(self, driving_can_id: int, steering_can_id: int, steering_encoder_offset: float, driving_inverted=False,
                  turning_inverted=False, label='') -> None:
         self.label = label
         self.desired_state = SwerveModuleState(0.0, Rotation2d())  # Initialize Desired State
@@ -38,44 +38,47 @@ class SwerveModule:
         """
         Initialize Turning Motor
         """
-        self.turning_motor = WPI_TalonSRX(turning_can_id)
-        self.turning_motor.clearStickyFaults()
-        self.turning_motor.configFactoryDefault()
-        self.turning_motor.setNeutralMode(phoenix5.NeutralMode.Coast)
-        self.turning_motor.configPeakCurrentLimit(constants.TURNING_MOTOR_CURRENT_LIMIT)
-        self.turning_motor.setInverted(turning_inverted)
-        self.turning_motor.configVoltageCompSaturation(constants.VOLTAGE_COMPENSATION)
-        self.turning_motor.enableVoltageCompensation(True)
-        self.turning_motor.configSelectedFeedbackSensor(TalonSRXFeedbackDevice.CTRE_MagEncoder_Absolute, 0, 50)
-        self.turning_motor.setSensorPhase(True)
-        self.turning_motor.configNominalOutputForward(0, 30)
-        self.turning_motor.configNominalOutputReverse(0, 30)
-        self.turning_motor.configPeakOutputForward(constants.TURNING_MAX_OUTPUT, 30)
-        self.turning_motor.configPeakOutputReverse(constants.TURNING_MIN_OUTPUT, 30)
+        self.steering_motor = WPI_TalonSRX(steering_can_id)
+        self.steering_motor.clearStickyFaults()
+        self.steering_motor.configFactoryDefault()
+        self.steering_motor.setNeutralMode(phoenix5.NeutralMode.Coast)
+        self.steering_motor.configPeakCurrentLimit(constants.STEERING_MOTOR_CURRENT_LIMIT)
+        self.steering_motor.enableCurrentLimit(True)
+        self.steering_motor.setInverted(turning_inverted)
+        self.steering_motor.configVoltageCompSaturation(constants.VOLTAGE_COMPENSATION)
+        self.steering_motor.enableVoltageCompensation(True)
+        self.steering_motor.configSelectedFeedbackSensor(TalonSRXFeedbackDevice.CTRE_MagEncoder_Absolute, 0, 50)
+        self.steering_motor.setSensorPhase(constants.STEER_ENCODERS_INVERTED)
+        self.steering_motor.configNominalOutputForward(0, 30)
+        self.steering_motor.configNominalOutputReverse(0, 30)
+        self.steering_motor.configPeakOutputForward(constants.STEERING_MAX_OUTPUT, 30)
+        self.steering_motor.configPeakOutputReverse(constants.STEERING_MIN_OUTPUT, 30)
 
-        self.turning_motor.selectProfileSlot(0, 0)
-        self.turning_motor.config_kP(0, constants.TURNING_P, 30)
-        self.turning_motor.config_kI(0, constants.TURNING_I, 30)
-        self.turning_motor.config_kD(0, constants.TURNING_D, 30)
-        self.turning_motor.config_kF(0, constants.TURNING_FF, 30)
+        self.steering_motor.selectProfileSlot(0, 0)
+        self.steering_motor.config_kP(0, constants.STEERING_P, 30)
+        self.steering_motor.config_kI(0, constants.STEERING_I, 30)
+        self.steering_motor.config_kD(0, constants.STEERING_D, 30)
+        self.steering_motor.config_kF(0, constants.STEERING_FF, 30)
+        self.steering_motor.configPeakOutputForward(constants.STEERING_MAX_OUTPUT)
+        self.steering_motor.configPeakOutputReverse(constants.STEERING_MIN_OUTPUT)
+        self.steering_motor.configSensorTerm()
 
-        self.turning_motor_position = self.turning_motor.getSensorCollection().getPulseWidthPosition()
-        self.turning_PID_controller = PIDController(Kp=constants.TURNING_P, Ki=constants.TURNING_I, Kd=constants.TURNING_D)
-        self.turning_PID_controller.enableContinuousInput(minimumInput=-math.pi, maximumInput=math.pi)
 
-    def get_turn_encoder(self):
-        analog_reverse_multiplier = -1 if constants.REVERSE_ANALOG_ENCODERS else 1
-        return analog_reverse_multiplier * self.turning_motor_position
+        self.steering_motor_position = self.steering_motor.getSensorCollection().getPulseWidthPosition() / constants.ENCODER_COUNTS_PER_REV * math.tau - steering_encoder_offset
+
+    def get_steer_encoder(self):
+        reverse_multiplier = -1 if constants.STEER_ENCODERS_INVERTED else 1
+        return reverse_multiplier * self.steering_motor_position
 
     def getState(self) -> SwerveModuleState:
         """Returns the current state of the module
         """
         return SwerveModuleState(self.driving_encoder.getVelocity(),
-                                 Rotation2d(self.get_turn_encoder()))
+                                 Rotation2d(self.get_steer_encoder()))
 
     def getPosition(self) -> SwerveModulePosition:
         return SwerveModulePosition(self.driving_encoder.getPosition(),
-                                    Rotation2d(self.get_turn_encoder()))
+                                    Rotation2d(self.get_steer_encoder()))
 
     def setDesiredState(self, desiredState: SwerveModuleState) -> None:
 
@@ -83,7 +86,7 @@ class SwerveModule:
         correctedDesiredState.speed = desiredState.speed
         correctedDesiredState.angle = desiredState.angle
 
-        optimizedDesiredState = SwerveModuleState.optimize(correctedDesiredState, Rotation2d(self.get_turn_encoder()))
+        optimizedDesiredState = SwerveModuleState.optimize(correctedDesiredState, Rotation2d(self.get_steer_encoder()))
 
         if math.fabs(desiredState.speed) < 0.002:
             optimizedDesiredState.speed = 0
@@ -91,9 +94,9 @@ class SwerveModule:
 
         self.driving_pid_controller.setReference(optimizedDesiredState.speed, constants.DRIVE_CONTROLLER_TYPE.ControlType.kVelocity)
 
-        self.turning_output = self.turning_PID_controller.calculate(self.get_turn_encoder(), optimizedDesiredState.angle.radians())
+        self.steering_motor.set(optimizedDesiredState.angle.radians() / math.tau * constants.ENCODER_COUNTS_PER_REV)
         self.turning_output = 0 if math.fabs(self.turning_output) < 0.01 else self.turning_output
-        self.turning_motor.set(self.turning_output)
+        self.steering_motor.set(self.turning_output)
 
     def resetEncoders(self) -> None:
         self.driving_encoder.setPosition(0)
