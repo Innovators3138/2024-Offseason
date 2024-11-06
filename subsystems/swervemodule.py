@@ -9,6 +9,7 @@ from rev import CANSparkMax
 from phoenix5 import WPI_TalonSRX, TalonSRXFeedbackDevice
 
 import constants
+from util.configure_controllers import configure_sparkmax
 
 class SwerveModule:
     def __init__(self, driving_can_id: int, steering_can_id: int, steering_encoder_offset: float, driving_inverted=False,
@@ -34,6 +35,8 @@ class SwerveModule:
 
         self.driving_pid_controller = self.driving_motor.getPIDController()
         self.driving_pid_controller.setFeedbackDevice(self.driving_encoder)
+        configure_sparkmax(sparkmax=self.driving_motor, pid_controller=self.driving_pid_controller, can_id=driving_can_id, slot=0,
+                           burn_flash=True, pid_dict=constants.PID_DICT_VEL)
         self.driving_encoder.setPosition(0)
 
         """
@@ -46,6 +49,7 @@ class SwerveModule:
         self.steering_motor.configPeakCurrentLimit(constants.STEERING_MOTOR_CURRENT_LIMIT)
         self.steering_motor.enableCurrentLimit(True)
         self.steering_motor.setInverted(turning_inverted)
+        self.steering_motor.configFeedbackNotContinuous(True)
         self.steering_motor.configVoltageCompSaturation(constants.VOLTAGE_COMPENSATION)
         self.steering_motor.enableVoltageCompensation(True)
         self.steering_motor.configSelectedFeedbackSensor(phoenix5.FeedbackDevice.CTRE_MagEncoder_Absolute)
@@ -64,11 +68,10 @@ class SwerveModule:
         self.steering_motor.configPeakOutputReverse(constants.STEERING_MIN_OUTPUT)
 
 
-        self.steering_motor_position = self.steering_motor.getSensorCollection().getPulseWidthPosition() / constants.ENCODER_COUNTS_PER_REV * math.tau - self.steering_encoder_offset
+        self.steering_motor_position = self.get_steer_encoder()
 
     def get_steer_encoder(self):
-        reverse_multiplier = -1 if constants.STEER_ENCODERS_INVERTED else 1
-        return reverse_multiplier * self.steering_motor_position
+        return self.steering_motor.getSensorCollection().getPulseWidthPosition() / constants.ENCODER_COUNTS_PER_REV * math.tau - self.steering_encoder_offset
 
     def getState(self) -> SwerveModuleState:
         """Returns the current state of the module
@@ -94,7 +97,10 @@ class SwerveModule:
 
         self.driving_pid_controller.setReference(optimizedDesiredState.speed, constants.DRIVE_CONTROLLER_TYPE.ControlType.kVelocity)
 
-        self.steering_motor.set(phoenix5.ControlMode.Position, optimizedDesiredState.angle.radians() / math.tau * constants.ENCODER_COUNTS_PER_REV + self.steering_encoder_offset)
+        desired_encoder = (optimizedDesiredState.angle.radians() / math.tau + self.steering_encoder_offset) * constants.ENCODER_COUNTS_PER_REV % constants.ENCODER_COUNTS_PER_REV
+        wpilib.SmartDashboard.putNumber(f"{self.label} Set Position", desired_encoder)
+
+        self.steering_motor.set(phoenix5.ControlMode.Position, desired_encoder )
         #self.turning_output = 0 if math.fabs(self.turning_output) < 0.01 else self.turning_output
 
     def resetEncoders(self) -> None:

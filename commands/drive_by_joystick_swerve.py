@@ -36,6 +36,7 @@ class DriveByJoystickSwerve(commands2.Command):
         slowmode_multiplier = 0.2 + 0.8 * self.controller.getRightTriggerAxis()
         angular_slowmode_multiplier = 0.5 + 0.5 * self.controller.getRightTriggerAxis()
 
+
         if self.robot_oriented_debouncer.calculate(self.robot_oriented_trigger.getAsBoolean()):
             self.field_oriented = False
         else:
@@ -75,7 +76,7 @@ class DriveByJoystickSwerve(commands2.Command):
         end_time = self.container.get_enabled_time()
         message = 'Interrupted' if interrupted else 'Ended'
         print(f"** {message} {self.getName()} at {end_time:.1f} s after {end_time - self.start_time:.1f} s")
-        SmartDashboard.putstring(f"alert", f"** {message} {self.getName()} at {end_time:.1f} s after {end_time - self.start_time:.1f} s")
+        SmartDashboard.putString(f"alert", f"** {message} {self.getName()} at {end_time:.1f} s after {end_time - self.start_time:.1f} s")
 
     def apply_deadband(self, value, db_low=constants.INNER_DEADBAND, db_high=constants.OUTER_DEADBAND):
         if abs(value) < db_low:

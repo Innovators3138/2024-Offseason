@@ -168,6 +168,9 @@ class Swerve(Subsystem):
         self.counter += 1
         wpilib.SmartDashboard.putNumber('_timestamp', wpilib.Timer.getFPGATimestamp())
 
+        for module in self.swerve_modules:
+            wpilib.SmartDashboard.putNumber(f"{module.label} steering motor position:", module.get_steer_encoder())
+
         if wpilib.RobotBase.isReal():
             self.pose_estimator.updateWithTime(wpilib.Timer.getFPGATimestamp(), Rotation2d.fromDegrees(self.get_angle()), self.get_module_positions(),)
         else:

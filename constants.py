@@ -8,6 +8,7 @@ from wpimath.trajectory import TrapezoidProfileRadians
 from rev import CANSparkMax
 from wpimath.system.plant import DCMotor
 
+import constants
 
 """
 CAN Mapping
@@ -25,7 +26,7 @@ BACK_RIGHT_STEER_CAN_ID = 8
 """
 Controller Mapping
 """
-DRIVE_CONTROLLER_PORT = 1
+DRIVE_CONTROLLER_PORT = 0
 
 """
 SOME IMPORTANT THINGS
@@ -137,14 +138,25 @@ TURNING_MOTOR_GEAR_RATIO = 396.0 / 35.0  # 11.3142:1
 DRIVING_P = 0
 DRIVING_I = 0
 DRIVING_D = 0
-DRIVING_FF = 1 / (DRIVE_WHEEL_FREE_SPEED_RPS / VOLTAGE_COMPENSATION)
+DRIVING_FF = 1 / (DRIVE_WHEEL_FREE_SPEED_RPS)
 DRIVING_MIN_OUTPUT = -0.96
 DRIVING_MAX_OUTPUT = 0.96
 SMART_POSITION_MAX_VELOCITY = 3  # m/s
 SMART_POSITION_MAX_ACCEL = 2  # m/s/s
 
-STEERING_P = 0.25
-STEERING_I = 0.0
+PID_DICT_VEL = {'kP': DRIVING_P,
+                'kI': DRIVING_I,
+                'kD': DRIVING_D,
+                'kIz': 0.001,
+                'kFF': DRIVING_FF,
+                'kArbFF': 0,
+                'kMaxOutput': DRIVING_MAX_OUTPUT,
+                'kMinOutput': DRIVING_MIN_OUTPUT,
+                'SM_MaxVel': SMART_POSITION_MAX_VELOCITY,
+                'SM_MaxAccel': SMART_POSITION_MAX_ACCEL}
+
+STEERING_P = 0.03
+STEERING_I = 0.01
 STEERING_D = 0.0
 STEERING_FF = 0.0
 STEERING_MIN_OUTPUT = -1.0
